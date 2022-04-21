@@ -62,6 +62,7 @@ import "sync"
 //	41. 				result.push(component)
 //	42. 				break
 //
+
 func Tarjan(g Graph) [][]ID {
 	d := newTarjanData()
 

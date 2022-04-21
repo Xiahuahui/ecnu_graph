@@ -143,6 +143,20 @@ type Graph interface {
 
 	// String describes the Graph.
 	String() string
+
+	CopyGraph() Graph
+
+	TarjanGraph() []Graph
+
+	get_idToNodes() map[ID]Node
+
+	// nodeToSources maps a Node identifer to sources(parents) with edge weights.
+	get_nodeToSources() map[ID]map[ID]float64
+
+	// nodeToTargets maps a Node identifer to targets(children) with edge weights.
+	get_nodeToTargets() map[ID]map[ID]float64
+
+
 }
 
 // graph is an internal default graph type that
@@ -160,6 +174,8 @@ type graph struct {
 	nodeToTargets map[ID]map[ID]float64
 }
 
+
+
 // newGraph returns a new graph.
 func newGraph() *graph {
 	return &graph{
@@ -172,10 +188,140 @@ func newGraph() *graph {
 	}
 }
 
-// NewGraph returns a new graph.
+// NewGraph returns a new graph
 func NewGraph() Graph {
 	return newGraph()
 }
+
+func (g *graph)get_idToNodes() map[ID]Node{
+	return g.idToNodes
+}
+
+// nodeToSources maps a Node identifer to sources(parents) with edge weights.
+func (g *graph)get_nodeToSources() map[ID]map[ID]float64{
+	return g.nodeToSources
+}
+
+// nodeToTargets maps a Node identifer to targets(children) with edge weights.
+func (g *graph)get_nodeToTargets() map[ID]map[ID]float64{
+	return g.nodeToTargets
+}
+
+func (g *graph)CopyGraph( ) Graph  {
+	new_graph := newGraph()
+	for newId,newNode := range g.idToNodes{
+		new_graph.idToNodes[newId] = newNode
+	}
+	for target_node,source_node_dict := range g.nodeToSources{
+		new_source_node_dict := make(map[ID]float64)
+		for source_node,weight := range source_node_dict{
+			new_source_node_dict[source_node] =weight
+
+		}
+		new_graph.nodeToSources[target_node] = new_source_node_dict
+	}
+
+	for source_node,target_node_dict := range g.nodeToTargets{
+		new_target_node_dict := make(map[ID]float64)
+		for target_node,weight := range target_node_dict{
+			new_target_node_dict[target_node] = weight
+
+		}
+		new_graph.nodeToTargets[source_node] = new_target_node_dict
+	}
+	return new_graph
+}
+
+func (g *graph)TarjanGraph() []Graph{
+	var SCC []Graph
+	sccGraphList := Tarjan(g)
+	for k:=0;k < len(sccGraphList); k++ {
+		part_graph := newGraph()
+		part_graph.Init()
+		SCC = append(SCC, part_graph)
+	}
+	node_index := make(map[string]int)
+   for index,sccGraph := range sccGraphList{
+		for _,scc_node := range sccGraph{
+			if _,ok := node_index[scc_node.String()];ok{
+				panic("一个节点出现在其他图里面")
+			}
+			node_index[scc_node.String()] = index
+			SCC[index].get_idToNodes()[scc_node] = NewNode(scc_node.String())
+		}
+
+	}
+	for target_node,source_node_dict := range g.nodeToSources {
+		for source_node,weight := range source_node_dict{
+			index1,ok1 := node_index[target_node.String()]
+			if !ok1{
+				panic("index1")
+			}
+			index2,ok2 := node_index[source_node.String()];
+			if !ok2{
+				panic("index2")
+			}
+			if index1 == index2 {
+				if _,ok3 := SCC[index1].get_nodeToTargets()[source_node];!ok3{
+					SCC[index1].get_nodeToTargets()[source_node] = make(map[ID]float64)
+				}
+				SCC[index1].get_nodeToTargets()[source_node][target_node] = weight
+				if _,ok4 := SCC[index1].get_nodeToSources()[target_node];!ok4{
+					SCC[index1].get_nodeToSources()[target_node] = make(map[ID]float64)
+				}
+				SCC[index1].get_nodeToSources()[target_node][source_node] = weight
+			}
+		}
+	}
+
+	return SCC
+}
+
+
+
+
+//func (g *graph)TarjanGraph()[]Graph{
+//	var SCC []Graph
+//	sccGraphList := Tarjan(g)
+//	for _,sccGraph := range sccGraphList{
+//		part_graph := newGraph()
+//		for _,scc_id := range sccGraph{
+//			part_graph.idToNodes[ID(scc_id)] = NewNode(scc_id.String())
+//		}
+//
+//		for target_node,source_node_dict := range g.nodeToSources{
+//			if _,ok := part_graph.idToNodes[target_node];!ok{
+//				continue
+//			}
+//			new_source_node_dict := make(map[ID]float64)
+//			for source_node,weight := range source_node_dict{
+//				if _,ok2 := part_graph.idToNodes[source_node];!ok2{
+//					continue
+//				}
+//				new_source_node_dict[source_node] =weight
+//
+//			}
+//			part_graph.nodeToSources[target_node] = new_source_node_dict
+//		}
+//
+//		for source_node,target_node_dict := range g.nodeToTargets{
+//			if _,ok := part_graph.idToNodes[source_node];!ok{
+//				continue
+//			}
+//			new_target_node_dict := make(map[ID]float64)
+//			for target_node,weight := range target_node_dict{
+//				if _,ok2 := part_graph.idToNodes[target_node];!ok2{
+//					continue
+//				}
+//				new_target_node_dict[target_node] = weight
+//
+//			}
+//			part_graph.nodeToTargets[source_node] = new_target_node_dict
+//		}
+//	SCC = append(SCC,part_graph)
+//	}
+//	return SCC
+//}
 
 func (g *graph) Init() {
 	// (X) g = newGraph()
