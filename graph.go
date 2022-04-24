@@ -156,6 +156,9 @@ type Graph interface {
 	// nodeToTargets maps a Node identifer to targets(children) with edge weights.
 	get_nodeToTargets() map[ID]map[ID]float64
 
+	GetNodeIdSet() []ID
+	GetNumOfEdges() int
+
 
 }
 
@@ -174,8 +177,21 @@ type graph struct {
 	nodeToTargets map[ID]map[ID]float64
 }
 
+func (g *graph)GetNumOfEdges() int{
+	edges_num := 0
+	for _,out_edges_map := range g.nodeToTargets{
+		edges_num += len(out_edges_map)
+	}
+	return edges_num
+}
 
-
+func (g *graph)GetNodeIdSet() []ID{
+	var nodeSet []ID
+	for id,_ := range g.idToNodes{
+		nodeSet = append(nodeSet,id)
+	}
+ 	return nodeSet
+}
 // newGraph returns a new graph.
 func newGraph() *graph {
 	return &graph{
